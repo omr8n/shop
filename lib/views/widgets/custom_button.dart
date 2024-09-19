@@ -8,9 +8,9 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
+    return ElevatedButton.icon(
       onPressed: onPressed,
-      child: Center(
+      label: Center(
         child: Text(
           title,
           style: const TextStyle(

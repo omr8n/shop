@@ -1,11 +1,16 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:shop/data/categories.dart';
 import 'package:shop/models/grocery_item.dart';
 
 import 'package:shop/views/widgets/custom_button.dart';
+import 'package:shop/views/widgets/custom_loading_indicator.dart';
 import 'package:shop/views/widgets/custom_text_field.dart';
 
 import '../../models/category_models.dart';
+import 'package:http/http.dart' as http;
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -15,6 +20,7 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
+  bool isLooding = false;
   final GlobalKey<FormState> formKey = GlobalKey();
 
   AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
@@ -23,7 +29,55 @@ class _NewItemState extends State<NewItem> {
 
   CategoryModels? selctedCategory = categories[Categories.meat];
 
-  String? title, subTitle;
+  void saveItem() {
+    if (formKey.currentState!.validate()) {
+      formKey.currentState!.save();
+      // setState(() {
+      //   isLooding = true;
+      // });
+      final url = Uri.parse(
+          "https://shop-test-1e694-default-rtdb.firebaseio.com/shopping-list.json"); // http.post(url);
+      // final Uri url = Uri.https(
+      //     "shop-test-1e694-default-rtdb.firebaseio.com','shopping-list.json");
+
+      http
+          .post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(
+          {
+            'name': name,
+            "quantity": quantity,
+            "category": selctedCategory!.title,
+          },
+        ),
+      )
+          .then(
+        (response) {
+          Map<String, dynamic> data = jsonDecode(response.body);
+          log(" statusCode =================${response.statusCode.toString()}");
+          log(" statusCode body=============${response.body}");
+          if (response.statusCode == 200) {
+            // Navigator.of(context).pop();
+
+            Navigator.of(context).pop(GroceryItem(
+                id: data["name"],
+                name: name!,
+                quantity: quantity!,
+                category: selctedCategory!));
+          }
+        },
+      );
+
+      // Navigator.of(context).pop(GroceryItem(
+      //     id: DateTime.now().toString(),
+      //     name: name!,
+      //     quantity: quantity!,
+      //     category: selctedCategory!));
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,23 +175,15 @@ class _NewItemState extends State<NewItem> {
                 children: [
                   CustomButton(
                     title: "Reset",
-                    onPressed: () {
-                      formKey.currentState!.reset();
-                    },
+                    onPressed: isLooding
+                        ? null
+                        : () {
+                            formKey.currentState!.reset();
+                          },
                   ),
                   CustomButton(
                     title: "Add Item",
-                    onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        formKey.currentState!.save();
-                        Navigator.of(context).pop(GroceryItem(
-                            id: DateTime.now().toString(),
-                            name: name!,
-                            quantity: quantity!,
-                            category: selctedCategory!));
-                        setState(() {});
-                      }
-                    },
+                    onPressed: isLooding ? null : saveItem,
                   ),
                 ],
               )
